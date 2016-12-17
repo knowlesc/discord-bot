@@ -6,8 +6,11 @@ To list possible commands: !\<botname\>
 To play an audio file: !\<botname\> play \<audio file name (without extension)\>
 
 Requires:
+
 1. Discord bot added to your server with sufficient permissions.
+
 2. DISCORDTOKEN environment variable set.
+
 3. FFMPEG and either build-essential (linux) or Visual C++ Tools (windows)
 
 Run npm install && npm start. 
