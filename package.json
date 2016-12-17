@@ -12,5 +12,11 @@
     "gulp": "^3.9.1",
     "gulp-eslint": "^3.0.1",
     "gulp-watch": "^4.3.11"
+  },
+  "dependencies": {
+    "discord.js": "^10.0.1",
+    "node-opus": "^0.2.4",
+    "opusscript": "0.0.1",
+    "winston": "^2.3.0"
   }
 }
