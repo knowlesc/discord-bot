@@ -16,7 +16,7 @@ class DiscordBot {
 
   start() {
     this.log.info("Starting bot");
-    
+
     this.client.on('ready', () => {
       this.log.info('Bot is connected');
       this.name = this.client.user.username;
@@ -31,7 +31,10 @@ class DiscordBot {
     });
 
     this.client.on('error', this.log.error);
-    this.client.on('message', this.handleMessage);
+
+    this.client.on('message', (message) => {
+      this.handleMessage(message);
+    });
 
     this.client.login(this.token);
   }
@@ -65,7 +68,7 @@ class DiscordBot {
     }
 
     const commandListHeader = 'Available commands: \n';
-    const playFileCommand = '!fraudbot play <audio clip name> \n\n'
+    const playFileCommand = '!' + this.name + ' play <audio clip name> \n\n'
 
     const audioFileListHeader = 'Available audio clips: \n'
     const audioFileList = audioFiles.join(' ');
@@ -79,7 +82,7 @@ class DiscordBot {
       this.log.info("No voice channel provided to play audio file to");
       return;
     }
-    
+
     if (!filepath) {
       this.log.info("No audio file path provided");
       return;
