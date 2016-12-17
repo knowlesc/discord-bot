@@ -47,4 +47,4 @@ jspm_packages
 .yarn-integrity
 
 # App-specific
-audio/*
+audio/*.mp3

@@ -1,0 +1,1 @@
+Put audio files (.mp3 only) in this directory and the bot will be able to play them.
