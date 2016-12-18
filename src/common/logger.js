@@ -1,7 +1,17 @@
 'use strict'
 
 var winston = require("winston");
-winston.add(winston.transports.File, { filename: 'app.log' });
+var logger = new (winston.Logger)({
+  transports: [
+    new (winston.transports.Console)({
+      level: 'info'
+    }),
+    new (winston.transports.File)({
+      filename: 'app.log',
+      level: 'debug'
+    })
+  ]
+});
 
 class Logger {
 
@@ -9,11 +19,18 @@ class Logger {
     this.appName = appName;
   }
 
+  debug(message) {
+    if (this.appName) {
+      message = "[" + this.appName + "] " + message;
+    }
+    logger.log("debug", message);
+  }
+
   info(message) {
     if (this.appName) {
       message = "[" + this.appName + "] " + message;
     }
-    winston.log("info", message);
+    logger.log("info", message);
   }
 
   error(error) {
@@ -23,7 +40,7 @@ class Logger {
     } else {
       message += "Error: " + error;
     }
-    winston.log("error", message);
+    logger.log("error", message);
   }
 }
 

@@ -23,13 +23,14 @@ class DiscordBot {
     });
 
     this.client.on('disconnect', () => {
-        this.log.info('Bot has disconnected');
+      this.log.info('Bot has disconnected');
     });
 
     this.client.on('reconnecting', () => {
-        this.log.info('Bot is reconnecting');
+      this.log.info('Bot is reconnecting');
     });
 
+    this.client.on('debug', this.log.debug);
     this.client.on('error', this.log.error);
 
     this.client.on('message', (message) => {
@@ -95,6 +96,7 @@ class DiscordBot {
 
     channel.join()
       .then((connection) => {
+        connection.on('debug', this.log.debug);
         connection.on('warn', this.log.info);
         connection.on('error', this.log.error);
         connection.on('disconnect', () => {
@@ -109,6 +111,7 @@ class DiscordBot {
           this.log.info("Starting playback of audio file");
         });
 
+        dispatcher.on('debug', this.log.debug);
         dispatcher.once('error', this.log.error);
 
         dispatcher.once('end', () => {
