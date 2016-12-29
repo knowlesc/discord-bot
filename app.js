@@ -8,11 +8,12 @@ if (!token) {
     throw new Error('No discord token provided.');
 }
 
-const bot = new DiscordBot(token);
-
 program
   .option('-a, --autostart')
+  .option('-d, --debug')
   .parse(process.argv);
+
+const bot = new DiscordBot(token, program.debug === true);
 
 if (program.autostart) {
   bot.start();

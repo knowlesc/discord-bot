@@ -9,7 +9,7 @@ gulp.task('run', function() {
   if (bot) {
     bot.kill();
   }
-  bot = spawn('node', ['--debug', 'app.js'], { stdio: 'inherit' });
+  bot = spawn('node', ['--debug', 'app.js', '-d'], { stdio: 'inherit' });
 });
 
 gulp.task('lint', function () {
