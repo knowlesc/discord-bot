@@ -17,8 +17,7 @@ export class DiscordBot {
 
     this.token = token;
     this.debug = debug === true;
-    // tslint:disable-next-line:no-any
-    this.client = new Discord.Client({ autoReconnect: true } as any);
+    this.client = new Discord.Client();
     this.log = new Logger('bot');
   }
 
@@ -57,14 +56,13 @@ export class DiscordBot {
 
   handleMessage(message: Discord.Message) {
     const audioCommandFilenameOnly = /\w+$/;
-    const audioCommand = new RegExp('^!' + this.name + ' play \\w+$');
-    const listCommand = new RegExp('^!' + this.name + '$');
+    const audioCommand = new RegExp(`^!${this.name} play \\w+$`);
+    const listCommand = new RegExp(`^!${this.name}$`);
+    const unknownCommand = new RegExp(`^!${this.name} .+`);
 
     const text = message.content;
 
-    if (listCommand.test(text)) {
-      message.channel.send(this.getCommandListMessage());
-    } else if (audioCommand.test(text)) {
+    if (audioCommand.test(text)) {
       const filename = audioCommandFilenameOnly.exec(text)[0];
       const channel = this.getCurrentVoiceChannelForUser(message.member);
       const filepath = FileUtils.findAudioFile(filename);
@@ -72,8 +70,12 @@ export class DiscordBot {
       if (filepath) {
         this.playAudioFileToVoiceChannel(channel, filepath);
       } else {
-        message.channel.send('No audio clip named ' + filename + ' exists');
+        message.channel.send(`No audio clip named ${filename} exists`);
       }
+    } else if (listCommand.test(text)) {
+      message.channel.send(this.getCommandListMessage());
+    } else if (unknownCommand.test(text)) {
+      message.channel.send(this.getCommandListMessage());
     }
   }
 
@@ -83,13 +85,18 @@ export class DiscordBot {
       return 'There are no audio clips available to play';
     }
 
-    const commandListHeader = 'Available commands: \n';
-    const playFileCommand = '!' + this.name + ' play <audio clip name> \n\n';
-
-    const audioFileListHeader = 'Available audio clips: \n';
     const audioFileList = audioFiles.join('\n');
+    const listText =
+`Available commands:
+!${this.name} play <audio clip name>
 
-    return commandListHeader + playFileCommand + audioFileListHeader + audioFileList;
+Available audio clips:
+\`\`\`
+${audioFileList}
+\`\`\`
+`;
+
+    return listText;
   }
 
   playAudioFileToVoiceChannel(channel: Discord.VoiceChannel, filepath: string) {
