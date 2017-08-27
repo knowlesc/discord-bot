@@ -1,9 +1,9 @@
-const fs = require('fs');
+import * as fs from 'fs';
 const audioFileBaseDirectory = './audio/';
 
-class FileUtils {
+export class FileUtils {
 
-  static findAudioFile(filename) {
+  static findAudioFile(filename: string) {
     const fullpath = audioFileBaseDirectory + filename + '.mp3';
 
     if (fs.existsSync(fullpath)) {
@@ -21,9 +21,8 @@ class FileUtils {
 
     const acceptedFileType = /^\w+\.mp3$/;
     const acceptedFiles = files.filter((file) => acceptedFileType.test(file))
-      .map((file) => file.slice(0, file.lastIndexOf(".")));
+      .map((file) => file.slice(0, file.lastIndexOf('.')));
+
     return acceptedFiles;
   }
 }
-
-module.exports = FileUtils;

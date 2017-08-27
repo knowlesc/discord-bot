@@ -1,17 +1,24 @@
-const Discord = require('discord.js');
-const Logger = require('../common/logger');
-const FileUtils = require('../common/fileutils');
+import * as Discord from 'discord.js';
+import { Logger } from '../common/logger';
+import { FileUtils } from '../common/fileutils';
 
-class DiscordBot {
+export class DiscordBot {
+
+  name: string;
+  token: string;
+  debug: boolean;
+  log: Logger;
+  client: Discord.Client;
 
   constructor(token, debug) {
     if (!token) {
-      throw new Error("No token provided to bot");
+      throw new Error('No token provided to bot');
     }
 
     this.token = token;
     this.debug = debug === true;
-    this.client = new Discord.Client({ autoReconnect: true });
+    // tslint:disable-next-line:no-any
+    this.client = new Discord.Client({ autoReconnect: true } as any);
     this.log = new Logger('bot');
   }
 
@@ -48,7 +55,7 @@ class DiscordBot {
     this.client.login(this.token);
   }
 
-  handleMessage(message) {
+  handleMessage(message: Discord.Message) {
     const audioCommandFilenameOnly = /\w+$/;
     const audioCommand = new RegExp('^!' + this.name + ' play \\w+$');
     const listCommand = new RegExp('^!' + this.name + '$');
@@ -56,16 +63,16 @@ class DiscordBot {
     const text = message.content;
 
     if (listCommand.test(text)) {
-      message.channel.sendMessage(this.getCommandListMessage());
+      message.channel.send(this.getCommandListMessage());
     } else if (audioCommand.test(text)) {
-      const filename = audioCommandFilenameOnly.exec(text);
+      const filename = audioCommandFilenameOnly.exec(text)[0];
       const channel = this.getCurrentVoiceChannelForUser(message.member);
       const filepath = FileUtils.findAudioFile(filename);
 
       if (filepath) {
         this.playAudioFileToVoiceChannel(channel, filepath);
       } else {
-        message.channel.sendMessage('No audio clip named ' + filename + ' exists');
+        message.channel.send('No audio clip named ' + filename + ' exists');
       }
     }
   }
@@ -77,28 +84,31 @@ class DiscordBot {
     }
 
     const commandListHeader = 'Available commands: \n';
-    const playFileCommand = '!' + this.name + ' play <audio clip name> \n\n'
+    const playFileCommand = '!' + this.name + ' play <audio clip name> \n\n';
 
     const audioFileListHeader = 'Available audio clips: \n';
-    const audioFileList = audioFiles.join(' ');
+    const audioFileList = audioFiles.join('\n');
 
     return commandListHeader + playFileCommand + audioFileListHeader + audioFileList;
   }
 
-  playAudioFileToVoiceChannel(channel, filepath) {
+  playAudioFileToVoiceChannel(channel: Discord.VoiceChannel, filepath: string) {
 
     if (!channel) {
       this.log.info('No voice channel provided to play audio file to');
+
       return;
     }
 
     if (!filepath) {
       this.log.info('No audio file path provided');
+
       return;
     }
 
     if (!channel.joinable) {
       this.log.info('Unable to join voice channel due to insufficient permissions');
+
       return;
     }
 
@@ -119,10 +129,10 @@ class DiscordBot {
         });
 
         connection.on('disconnect', () => {
-          this.log.info("Disconnected from channel " + channel.name);
-        })
+          this.log.info('Disconnected from channel ' + channel.name);
+        });
 
-        this.log.info("Connected to channel " + channel.name);
+        this.log.info('Connected to channel ' + channel.name);
 
         const dispatcher = connection.playFile(filepath);
 
@@ -150,16 +160,14 @@ class DiscordBot {
       });
   }
 
-  getCurrentVoiceChannelForUser(member) {
-    var channel = member.voiceChannel;
+  getCurrentVoiceChannelForUser(member: Discord.GuildMember) {
+    const channel = member.voiceChannel;
 
     if (!channel) {
-      this.log.info('Can\'t retrieve message channel');
+      this.log.error('Can\'t retrieve message channel');
+      throw new Error('Can\'t retrieve message channel');
     } else {
       return channel;
     }
   }
-
 }
-
-module.exports = DiscordBot;

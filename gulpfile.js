@@ -1,24 +1,37 @@
-var gulp = require('gulp');
-var eslint = require('gulp-eslint');
-var spawn = require('child_process').spawn;
-var bot;
+const gulp = require('gulp');
+const ts = require('gulp-typescript');
+const tslint = require("gulp-tslint");
+const spawn = require('child_process').spawn;
+let bot;
 
-gulp.task('default', ['run', 'watch', 'lint']);
+gulp.task('default', ['watch', 'tslint', 'build', 'run']);
 
-gulp.task('run', function() {
+gulp.task('watch', () => {
+  gulp.watch(['src/**/*.ts'], ['tslint', 'build', 'run']);
+});
+
+gulp.task('run', ['build'], () => {
   if (bot) {
     bot.kill();
   }
-  bot = spawn('node', ['--debug', 'app.js', '-d'], { stdio: 'inherit' });
+  bot = spawn('node', ['--inspect', 'build/app.js', '-d'], { stdio: 'inherit' });
 });
 
-gulp.task('lint', function () {
-  return gulp.src(['src/**/*.js'])
-    .pipe(eslint())
-    .pipe(eslint.format())
-    .pipe(eslint.failAfterError());
+gulp.task('tslint', ['build'], () => {
+  return gulp.src('src/**/*.ts')
+    .pipe(tslint({
+      formatter: 'stylish'
+    }))
+    .pipe(tslint.report({
+      emitError: false
+    }))
 });
 
-gulp.task('watch', function() {
-  return gulp.watch(['src/**/*.js', 'app.js', '.eslintrc'], ['lint', 'run']);
-})
+gulp.task('build', () => {
+  const tsProject = ts.createProject('tsconfig.json');
+  const tsResult = gulp.src('src/**/*.ts')
+    .pipe(tsProject());
+
+  return tsResult.js.pipe(gulp.dest('build'));
+});
+

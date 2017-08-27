@@ -48,3 +48,4 @@ jspm_packages
 
 # App-specific
 audio/*.mp3
+build/

@@ -1,6 +1,7 @@
-const program = require('commander');
-const DiscordBot = require('./src/bot/bot');
-const Logger = require('./src/common/logger');
+import * as program from 'commander';
+import { DiscordBot } from './bot/bot';
+import { Logger } from './common/logger';
+
 const log = new Logger('main');
 
 const token = process.env.DISCORDTOKEN;
@@ -19,12 +20,12 @@ if (program.autostart) {
   bot.start();
 } else {
   const COMMANDS = {
-    START: "start"
-  }
+    START: 'start'
+  };
 
   const stdin = process.openStdin();
 
-  stdin.addListener("data", (command) => {
+  stdin.addListener('data', (command) => {
     command = command.toString().trim().toLowerCase();
 
     if (command === COMMANDS.START) {
@@ -32,7 +33,5 @@ if (program.autostart) {
     }
   });
 
-  console.log("Type \"" + COMMANDS.START + "\" to start the bot.");
+  console.log('Type "' + COMMANDS.START + '" to start the bot.');
 }
-
-
