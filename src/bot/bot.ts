@@ -9,6 +9,7 @@ export class DiscordBot {
   debug: boolean;
   log: Logger;
   client: Discord.Client;
+  currentChannel: Discord.VoiceChannel;
 
   constructor(token, debug) {
     if (!token) {
@@ -58,6 +59,7 @@ export class DiscordBot {
     const audioCommandFilenameOnly = /\w+$/;
     const audioCommand = new RegExp(`^!${this.name} play \\w+$`);
     const listCommand = new RegExp(`^!${this.name}$`);
+    const stopCommand = new RegExp(`^(sh(h+))|(shut up)|(stop)|(quiet)|(don't)|(no more)|(quit it)$`);
     const unknownCommand = new RegExp(`^!${this.name} .+`);
 
     const text = message.content;
@@ -76,6 +78,10 @@ export class DiscordBot {
       message.channel.send(this.getCommandListMessage());
     } else if (unknownCommand.test(text)) {
       message.channel.send(this.getCommandListMessage());
+    } else if (stopCommand.test(text)) {
+      if (this.currentChannel) {
+        this.currentChannel.leave();
+      }
     }
   }
 
@@ -121,6 +127,8 @@ ${audioFileList}
 
     channel.join()
       .then((connection) => {
+        this.currentChannel = channel;
+
         if (this.debug) {
           connection.on('debug', (message) => {
             this.log.debug(message, 'connection');
@@ -137,6 +145,7 @@ ${audioFileList}
 
         connection.on('disconnect', () => {
           this.log.info('Disconnected from channel ' + channel.name);
+          this.currentChannel = null;
         });
 
         this.log.info('Connected to channel ' + channel.name);
@@ -164,6 +173,7 @@ ${audioFileList}
       })
       .catch((error) => {
         this.log.error(error, 'connection');
+        this.currentChannel = null;
       });
   }
 
