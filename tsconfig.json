@@ -4,7 +4,10 @@
     "target": "es6",
     "outDir": "build",
     "removeComments": true,
-    "inlineSourceMap": true
+    "inlineSourceMap": true,
+    "noImplicitAny": true,
+    "noImplicitUseStrict": true,
+    "noUnusedLocals": true
   },
   "include": [
     "src/**/*.ts"

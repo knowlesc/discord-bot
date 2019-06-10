@@ -5,19 +5,15 @@ import { FileUtils } from '../common/fileutils';
 export class DiscordBot {
 
   name: string;
-  token: string;
-  debug: boolean;
   log: Logger;
   client: Discord.Client;
   currentChannel: Discord.VoiceChannel;
 
-  constructor(token, debug) {
-    if (!token) {
-      throw new Error('No token provided to bot');
-    }
+  constructor(
+    private token: string,
+    private debug: boolean) {
+    if (!token) throw new Error('No token provided to bot');
 
-    this.token = token;
-    this.debug = debug === true;
     this.client = new Discord.Client();
     this.log = new Logger('bot');
   }
@@ -135,8 +131,8 @@ ${audioFileList}
           });
         }
 
-        connection.on('warn', (message) => {
-          this.log.info(message, 'connection');
+        connection.on('warn', (error) => {
+          this.log.error(error, 'connection');
         });
 
         connection.on('error', (error) => {
@@ -144,11 +140,11 @@ ${audioFileList}
         });
 
         connection.on('disconnect', () => {
-          this.log.info('Disconnected from channel ' + channel.name);
+          this.log.info(`Disconnected from channel ${channel.name}`);
           this.currentChannel = null;
         });
 
-        this.log.info('Connected to channel ' + channel.name);
+        this.log.info(`Connected to channel ${channel.name}`);
 
         const dispatcher = connection.playFile(filepath);
 

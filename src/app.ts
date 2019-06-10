@@ -1,13 +1,11 @@
+import * as dotenv from 'dotenv';
 import * as program from 'commander';
 import { DiscordBot } from './bot/bot';
-import { Logger } from './common/logger';
 
-const log = new Logger('main');
+dotenv.config();
 
 const token = process.env.DISCORDTOKEN;
-if (!token) {
-    throw new Error('No discord token provided.');
-}
+if (!token) throw new Error('No discord token provided.');
 
 program
   .option('-a, --autostart')
@@ -33,5 +31,6 @@ if (program.autostart) {
     }
   });
 
-  console.log('Type "' + COMMANDS.START + '" to start the bot.');
+  // tslint:disable-next-line:no-console
+  console.log(`Type ${COMMANDS.START} to start the bot.`);
 }

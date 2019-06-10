@@ -1,53 +1,49 @@
-import * as winston from 'winston';
+import * as path from 'path';
+import { createLogger, format, transports } from 'winston';
 
-const logger = new (winston.Logger)({
+const logger = createLogger({
   transports: [
-    new (winston.transports.Console)({
-      level: 'info'
+    new (transports.Console)({
+      level: process.env.LOGLEVEL || 'info',
+      format: format.combine(
+        format.align(),
+        format.colorize(),
+        format.simple())
     }),
-    new (winston.transports.File)({
-      filename: 'app.log',
-      level: 'debug'
+    new (transports.File)({
+      filename: path.join(path.dirname(require.main.filename), '../app.log'),
+      level: 'debug',
+      options: { flags: 'w' },
+      format: format.combine(
+        format.timestamp(),
+        format.printf(({ level, message, timestamp }) =>
+          `${timestamp} ${level.padStart(8)}: ${message}`))
     })
   ]
 });
 
 export class Logger {
+  constructor(private name: string) {
 
-  appName: string;
-
-  constructor(appName) {
-    this.appName = appName;
   }
 
-  debug(message: string, category?) {
-    logger.log('debug', this.appendMessagePrefix(message, category));
+  debug(message: string, category?: string) {
+    logger.log('debug', this.buildMessage(message, category));
   }
 
-  info(message, category?) {
-    logger.log('info', this.appendMessagePrefix(message, category));
+  info(message: string, category?: string) {
+    logger.log('info', this.buildMessage(message, category));
   }
 
-  error(error, category?) {
-    let message = '';
-    if (error instanceof Error) {
-      message = error.name + ': ' + error.message;
-    } else {
-      message = 'Error: ' + error;
-    }
+  error(error: string | Error, category?: string) {
+    const message = error instanceof Error
+      ? `${error.name}: ${error.message}`
+      : `Error: ${error}`;
 
-    logger.log('error', this.appendMessagePrefix(message, category));
+    logger.log('error', this.buildMessage(message, category));
   }
 
-  appendMessagePrefix(message, category?) {
-    let prefix = '';
-
-    if (category) {
-      prefix = '[' + category + '] ';
-    } else if (this.appName) {
-      prefix = '[' + this.appName + '] ';
-    }
-
-    return prefix + message;
+  private buildMessage(message: string, category?: string) {
+    return `[${category || this.name}] ${message}`;
   }
 }

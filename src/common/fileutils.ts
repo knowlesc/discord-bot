@@ -1,10 +1,12 @@
 import * as fs from 'fs';
-const audioFileBaseDirectory = './audio/';
+import * as path from 'path';
+
+const audioFileBaseDirectory = path.join(path.dirname(require.main.filename), '../audio');
 
 export class FileUtils {
 
   static findAudioFile(filename: string) {
-    const fullpath = audioFileBaseDirectory + filename + '.mp3';
+    const fullpath = path.join(audioFileBaseDirectory, `${filename}.mp3`);
 
     if (fs.existsSync(fullpath)) {
       return fullpath;
