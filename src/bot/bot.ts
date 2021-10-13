@@ -66,7 +66,7 @@ export class DiscordBot {
 
   // TODO refactor - modular
   async handleMessage(message: Message) {
-    const nameOrShortName = `(!${this.name})|(!${this.shortName})`;
+    const nameOrShortName = `((!${this.name})|(!${this.shortName}))`;
     const unknownCommand = new RegExp(`^${nameOrShortName} .+`);
     const audioCommand = new RegExp(`^${nameOrShortName} play (\\w+)$`);
     const listCommand = new RegExp(`^${nameOrShortName}$`);
