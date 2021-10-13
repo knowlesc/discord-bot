@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import * as program from 'commander';
+import { program } from 'commander';
 import { DiscordBot } from './bot/bot';
 
 dotenv.config();
@@ -7,18 +7,16 @@ dotenv.config();
 const token = process.env.DISCORDTOKEN;
 if (!token) throw new Error('No discord token provided.');
 
-program
-  .option('-a, --autostart')
-  .option('-d, --debug')
-  .parse(process.argv);
+program.option('-a, --autostart').option('-d, --debug').parse(process.argv);
 
-const bot = new DiscordBot(token, program.debug === true);
+const opts = program.opts();
+const bot = new DiscordBot(token, opts.debug === true);
 
-if (program.autostart) {
+if (opts.autostart) {
   bot.start();
 } else {
   const COMMANDS = {
-    START: 'start'
+    START: 'start',
   };
 
   const stdin = process.openStdin();

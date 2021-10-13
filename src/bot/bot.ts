@@ -1,21 +1,33 @@
-import * as Discord from 'discord.js';
 import { Logger } from '../common/logger';
 import { FileUtils } from '../common/fileutils';
+import {
+  AudioPlayer,
+  createAudioPlayer,
+  VoiceConnection,
+} from '@discordjs/voice';
+import {
+  createDiscordClient,
+  getCurrentVoiceChannelForUser,
+  playAudioFileToVoiceChannel,
+} from './discord';
+import { Client, Message } from 'discord.js';
 
 export class DiscordBot {
+  // will be replaced on login
+  name: string = 'temp';
+  shortName: string = 'temp';
 
-  name: string;
   log: Logger;
-  client: Discord.Client;
-  currentChannel: Discord.VoiceChannel;
+  client: Client;
+  player: AudioPlayer;
+  voiceConnection: VoiceConnection | undefined;
 
-  constructor(
-    private token: string,
-    private debug: boolean) {
+  constructor(private token: string, private debug: boolean) {
     if (!token) throw new Error('No token provided to bot');
 
-    this.client = new Discord.Client();
     this.log = new Logger('bot');
+    this.client = createDiscordClient();
+    this.player = createAudioPlayer();
   }
 
   start() {
@@ -29,7 +41,8 @@ export class DiscordBot {
 
     this.client.on('ready', () => {
       this.log.info('Bot is connected');
-      this.name = this.client.user.username;
+      this.name = this.client.user!.username;
+      this.shortName = `${this.name[0]}b`; // b for "bot"
     });
 
     this.client.on('disconnect', () => {
@@ -40,7 +53,7 @@ export class DiscordBot {
       this.log.info('Bot is reconnecting');
     });
 
-    this.client.on('message', (message) => {
+    this.client.on('messageCreate', (message) => {
       this.handleMessage(message);
     });
 
@@ -51,34 +64,43 @@ export class DiscordBot {
     this.client.login(this.token);
   }
 
-  handleMessage(message: Discord.Message) {
-    const audioCommandFilenameOnly = /\w+$/;
-    const audioCommand = new RegExp(`^!${this.name} play \\w+$`);
-    const listCommand = new RegExp(`^!${this.name}$`);
-    const stopCommand = new RegExp(`^(sh(h+))|(shut up)|(stop)|(quiet)|(don't)|(no more)|(quit it)$`);
-    const unknownCommand = new RegExp(`^!${this.name} .+`);
-
+  // TODO refactor - modular
+  async handleMessage(message: Message) {
+    const nameOrShortName = `(!${this.name})|(!${this.shortName})`;
+    const unknownCommand = new RegExp(`^${nameOrShortName} .+`);
+    const audioCommand = new RegExp(`^${nameOrShortName} play (\\w+)$`);
+    const listCommand = new RegExp(`^${nameOrShortName}$`);
+    const stopCommand = new RegExp(
+      `^(sh(h+))|(shut up)|(stop)|(quiet)|(don't)|(no more)|(quit it)$`
+    );
     const text = message.content;
 
-    if (audioCommand.test(text)) {
-      const filename = audioCommandFilenameOnly.exec(text)[0];
-      const channel = this.getCurrentVoiceChannelForUser(message.member);
-      const filepath = FileUtils.findAudioFile(filename);
-
-      if (filepath) {
-        this.playAudioFileToVoiceChannel(channel, filepath);
-      } else {
-        message.channel.send(`No audio clip named ${filename} exists`);
+    try {
+      if (audioCommand.test(text)) {
+        this.playAudio(message);
+      } else if (listCommand.test(text)) {
+        message.reply(this.getCommandListMessage());
+      } else if (unknownCommand.test(text)) {
+        message.reply(this.getCommandListMessage());
+      } else if (stopCommand.test(text)) {
+        this.voiceConnection?.disconnect();
       }
-    } else if (listCommand.test(text)) {
-      message.channel.send(this.getCommandListMessage());
-    } else if (unknownCommand.test(text)) {
-      message.channel.send(this.getCommandListMessage());
-    } else if (stopCommand.test(text)) {
-      if (this.currentChannel) {
-        this.currentChannel.leave();
-      }
+    } catch (e: any) {
+      this.log.error(e);
     }
+  }
+
+  async playAudio(message: Message) {
+    const filename = message.content.split(' ').pop();
+    if (!filename || !message.member) return;
+
+    const channel = getCurrentVoiceChannelForUser(message.member);
+    const filepath = FileUtils.findAudioFile(filename);
+    this.voiceConnection = await playAudioFileToVoiceChannel(
+      channel,
+      filepath,
+      this.player
+    );
   }
 
   getCommandListMessage() {
@@ -88,8 +110,7 @@ export class DiscordBot {
     }
 
     const audioFileList = audioFiles.join('\n');
-    const listText =
-`Available commands:
+    const listText = `Available commands:
 !${this.name} play <audio clip name>
 
 Available audio clips:
@@ -99,88 +120,5 @@ ${audioFileList}
 `;
 
     return listText;
-  }
-
-  playAudioFileToVoiceChannel(channel: Discord.VoiceChannel, filepath: string) {
-
-    if (!channel) {
-      this.log.info('No voice channel provided to play audio file to');
-
-      return;
-    }
-
-    if (!filepath) {
-      this.log.info('No audio file path provided');
-
-      return;
-    }
-
-    if (!channel.joinable) {
-      this.log.info('Unable to join voice channel due to insufficient permissions');
-
-      return;
-    }
-
-    channel.join()
-      .then((connection) => {
-        this.currentChannel = channel;
-
-        if (this.debug) {
-          connection.on('debug', (message) => {
-            this.log.debug(message, 'connection');
-          });
-        }
-
-        connection.on('warn', (error) => {
-          this.log.error(error, 'connection');
-        });
-
-        connection.on('error', (error) => {
-          this.log.error(error, 'connection');
-        });
-
-        connection.on('disconnect', () => {
-          this.log.info(`Disconnected from channel ${channel.name}`);
-          this.currentChannel = null;
-        });
-
-        this.log.info(`Connected to channel ${channel.name}`);
-
-        const dispatcher = connection.playFile(filepath);
-
-        dispatcher.once('start', () => {
-          this.log.info('Starting playback of audio file');
-        });
-
-        if (this.debug) {
-          dispatcher.on('debug', (message) => {
-            this.log.debug(message, 'dispatcher');
-          });
-        }
-
-        dispatcher.once('error', (error) => {
-          this.log.error(error, 'dispatcher');
-          channel.leave();
-        });
-
-        dispatcher.once('end', () => {
-          channel.leave();
-        });
-      })
-      .catch((error) => {
-        this.log.error(error, 'connection');
-        this.currentChannel = null;
-      });
-  }
-
-  getCurrentVoiceChannelForUser(member: Discord.GuildMember) {
-    const channel = member.voiceChannel;
-
-    if (!channel) {
-      this.log.error('Can\'t retrieve message channel');
-      throw new Error('Can\'t retrieve message channel');
-    } else {
-      return channel;
-    }
   }
 }
