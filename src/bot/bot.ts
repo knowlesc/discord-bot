@@ -91,8 +91,11 @@ export class DiscordBot {
   }
 
   async playAudio(message: Message) {
+    if (!message.member) return message.reply('Unable to play audio');
+
     const filename = message.content.split(' ').pop();
-    if (!filename || !message.member) return;
+    if (!filename || !message.member)
+      return message.reply('Audio clip not found');
 
     const channel = getCurrentVoiceChannelForUser(message.member);
     const filepath = FileUtils.findAudioFile(filename);
@@ -101,6 +104,8 @@ export class DiscordBot {
       filepath,
       this.player
     );
+
+    return;
   }
 
   getCommandListMessage() {
