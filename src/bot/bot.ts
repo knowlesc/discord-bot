@@ -87,15 +87,13 @@ export class DiscordBot {
       }
     } catch (e: any) {
       this.log.error(e);
+      message.reply(e);
     }
   }
 
   async playAudio(message: Message) {
-    if (!message.member) return message.reply('Unable to play audio');
-
     const filename = message.content.split(' ').pop();
-    if (!filename || !message.member)
-      return message.reply('Audio clip not found');
+    if (!filename || !message.member) return;
 
     const channel = getCurrentVoiceChannelForUser(message.member);
     const filepath = FileUtils.findAudioFile(filename);
