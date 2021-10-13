@@ -6,11 +6,18 @@ import {
   VoiceConnection,
 } from '@discordjs/voice';
 import {
+  createButtonList,
   createDiscordClient,
   getCurrentVoiceChannelForUser,
   playAudioFileToVoiceChannel,
 } from './discord';
-import { Client, Message } from 'discord.js';
+import {
+  ButtonInteraction,
+  Client,
+  GuildMember,
+  Interaction,
+  Message,
+} from 'discord.js';
 
 export class DiscordBot {
   // will be replaced on login
@@ -57,6 +64,10 @@ export class DiscordBot {
       this.handleMessage(message);
     });
 
+    this.client.on('interactionCreate', (interaction) => {
+      this.handleInteraction(interaction);
+    });
+
     this.client.on('error', (error) => {
       this.log.error(error, 'client');
     });
@@ -77,9 +88,12 @@ export class DiscordBot {
 
     try {
       if (audioCommand.test(text)) {
-        await this.playAudio(message);
+        await this.playAudio(
+          message.content.split(' ').pop(),
+          message.member as GuildMember
+        );
       } else if (listCommand.test(text)) {
-        await message.reply(this.getCommandListMessage());
+        this.listAudioCategories(message);
       } else if (unknownCommand.test(text)) {
         await message.reply(this.getCommandListMessage());
       } else if (stopCommand.test(text)) {
@@ -91,11 +105,35 @@ export class DiscordBot {
     }
   }
 
-  async playAudio(message: Message) {
-    const filename = message.content.split(' ').pop();
-    if (!filename || !message.member) return;
+  async handleInteraction(interaction: Interaction) {
+    try {
+      if (
+        interaction.isButton() &&
+        interaction.message.content === 'Audio Categories'
+      ) {
+        this.listAudioFilesInCategory(interaction);
+      } else if (
+        interaction.isButton() &&
+        interaction.message.content === 'Audio Files'
+      ) {
+        await this.playAudio(
+          interaction.customId,
+          interaction.member as GuildMember
+        );
+        interaction.reply(`Playing audio clip...`);
+        interaction.deleteReply();
+      } else {
+        interaction.isButton() && interaction.reply('Not sure what to do');
+      }
+    } catch (e: any) {
+      this.log.error(e);
+    }
+  }
 
-    const channel = getCurrentVoiceChannelForUser(message.member);
+  async playAudio(filename: string | undefined, member: GuildMember) {
+    if (!filename || !member) return;
+
+    const channel = getCurrentVoiceChannelForUser(member);
     const filepath = FileUtils.findAudioFile(filename);
     this.voiceConnection = await playAudioFileToVoiceChannel(
       channel,
@@ -106,6 +144,41 @@ export class DiscordBot {
     return;
   }
 
+  async listAudioCategories(message: Message) {
+    const categories = FileUtils.listAudioCategories();
+    if (!categories) {
+      message.reply('There are no audio clips available to play');
+      return;
+    }
+
+    const components = createButtonList(categories);
+
+    message.reply({
+      content: 'Audio Categories',
+      components,
+    });
+  }
+
+  async listAudioFilesInCategory(interaction: ButtonInteraction) {
+    const category = interaction.customId;
+    const files = FileUtils.listAudioFileNames(category);
+    if (!files) {
+      interaction.reply({
+        content: 'There are no audio clips available to play',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const components = createButtonList(files);
+
+    interaction.reply({
+      content: 'Audio Files',
+      components,
+      ephemeral: true,
+    });
+  }
+
   getCommandListMessage() {
     const audioFiles = FileUtils.listAudioFileNames();
     if (!audioFiles) {
@@ -114,7 +187,8 @@ export class DiscordBot {
 
     const audioFileList = audioFiles.join('\n');
     const listText = `Available commands:
-!${this.name} play <audio clip name>
+!${this.shortName}
+!${this.name}
 
 Available audio clips:
 \`\`\`

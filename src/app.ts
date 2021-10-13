@@ -32,3 +32,7 @@ if (opts.autostart) {
   // tslint:disable-next-line:no-console
   console.log(`Type ${COMMANDS.START} to start the bot.`);
 }
+
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled promise rejection:', error);
+});

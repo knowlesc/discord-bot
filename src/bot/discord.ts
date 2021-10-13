@@ -7,7 +7,14 @@ import {
   joinVoiceChannel,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
-import { Client, GuildMember, VoiceChannel } from 'discord.js';
+import {
+  BaseMessageComponentOptions,
+  Client,
+  GuildMember,
+  MessageActionRowComponentResolvable,
+  MessageActionRowOptions,
+  VoiceChannel,
+} from 'discord.js';
 
 export function createDiscordClient() {
   return new Client({
@@ -72,4 +79,27 @@ export async function playAudioFileToVoiceChannel(
 
   await entersState(player, AudioPlayerStatus.Playing, 5e3);
   return connection;
+}
+
+export function createButtonList(data: string[]) {
+  return data
+    .slice(0, 25)
+    .map(
+      (c) =>
+        ({
+          type: 2,
+          label: c,
+          style: 1,
+          customId: c,
+        } as MessageActionRowComponentResolvable)
+    )
+    .reduce((acc, component, i) => {
+      if (i % 5 === 0)
+        acc.push({
+          type: 1,
+          components: [],
+        });
+      acc[acc.length - 1].components.push(component);
+      return acc;
+    }, [] as (Required<BaseMessageComponentOptions> & MessageActionRowOptions)[]);
 }

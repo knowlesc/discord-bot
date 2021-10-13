@@ -17,7 +17,7 @@ export class FileUtils {
     return fullpath;
   }
 
-  static listAudioFileNames() {
+  static listAudioFileNames(category?: string) {
     const files = fs.readdirSync(audioFileBaseDirectory);
     if (!files) {
       return null;
@@ -26,8 +26,16 @@ export class FileUtils {
     const acceptedFileType = /^\w+\.mp3$/;
     const acceptedFiles = files
       .filter((file) => acceptedFileType.test(file))
-      .map((file) => file.slice(0, file.lastIndexOf('.')));
+      .map((file) => file.slice(0, file.lastIndexOf('.')))
+      .filter((file) => !category || file.startsWith(`${category}_`));
 
     return acceptedFiles;
+  }
+
+  static listAudioCategories() {
+    const files = this.listAudioFileNames();
+    if (!files) return null;
+
+    return Array.from(new Set(files.map((file) => file.split('_').shift()!)));
   }
 }
