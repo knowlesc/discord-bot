@@ -77,11 +77,11 @@ export class DiscordBot {
 
     try {
       if (audioCommand.test(text)) {
-        this.playAudio(message);
+        await this.playAudio(message);
       } else if (listCommand.test(text)) {
-        message.reply(this.getCommandListMessage());
+        await message.reply(this.getCommandListMessage());
       } else if (unknownCommand.test(text)) {
-        message.reply(this.getCommandListMessage());
+        await message.reply(this.getCommandListMessage());
       } else if (stopCommand.test(text)) {
         this.voiceConnection?.disconnect();
       }
